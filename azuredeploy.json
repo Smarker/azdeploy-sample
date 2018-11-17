@@ -24,44 +24,36 @@
     },
     "resources": [
         {
-            "type": "Microsoft.Web/serverfarms",
-            "sku": {
-                "name": "D1",
-                "tier": "Shared",
-                "size": "D1",
-                "family": "D",
-                "capacity": 0
-            },
-            "kind": "app",
-            "name": "[variables('appServiceName')]",
-            "apiVersion": "2016-09-01",
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-02-01",
             "location": "[parameters('location')]",
+            "kind": "StorageV2",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
             "properties": {
-                "name": "[variables('appServiceName')]"
+                "accessTier": "Hot"
             }
         },
         {
-            "type": "Microsoft.Web/sites",
-            "kind": "app",
-            "name": "[parameters('siteName')]",
-            "apiVersion": "2016-08-01",
+            "name": "[variables('databaseAccountName')]",
+            "type": "Microsoft.DocumentDB/databaseAccounts",
+            "apiVersion": "2015-04-08",
             "location": "[parameters('location')]",
-            "properties": {
-                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]",
-                "siteConfig": {
-                    "appSettings": [
-                        {
-                            "name": "TEST",
-                            "value": "MY_VALUE"
-                        }
-                    ]
-                }
+            "kind": "MongoDB",
+            "tags": {
+                "defaultExperience": "MongoDB"
             },
-            "dependsOn": [
-                "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]",
-                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('databaseAccountName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-            ]
+            "properties": {
+                "databaseAccountOfferType": "Standard",
+                "locations": [{
+                    "locationName": "[parameters('location')]",
+                    "failoverPriority": 0
+                }],
+                "name": "[variables('databaseAccountName')]"
+            }
         },
         {
             "type": "Microsoft.Logic/workflows",
@@ -100,36 +92,57 @@
             ]
         },
         {
-            "name": "[variables('storageAccountName')]",
-            "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2018-02-01",
-            "location": "[parameters('location')]",
-            "kind": "StorageV2",
+            "type": "Microsoft.Web/serverfarms",
             "sku": {
-                "name": "Standard_LRS",
-                "tier": "Standard"
+                "name": "D1",
+                "tier": "Shared",
+                "size": "D1",
+                "family": "D",
+                "capacity": 0
             },
+            "kind": "app",
+            "name": "[variables('appServiceName')]",
+            "apiVersion": "2016-09-01",
+            "location": "[parameters('location')]",
             "properties": {
-                "accessTier": "Hot"
+                "name": "[variables('appServiceName')]"
             }
         },
         {
-            "name": "[variables('databaseAccountName')]",
-            "type": "Microsoft.DocumentDB/databaseAccounts",
-            "apiVersion": "2015-04-08",
+            "type": "Microsoft.Web/sites",
+            "kind": "app",
+            "name": "[parameters('siteName')]",
+            "apiVersion": "2016-08-01",
             "location": "[parameters('location')]",
-            "kind": "MongoDB",
-            "tags": {
-                "defaultExperience": "MongoDB"
-            },
             "properties": {
-                "databaseAccountOfferType": "Standard",
-                "locations": [{
-                    "locationName": "[parameters('location')]",
-                    "failoverPriority": 0
-                }],
-                "name": "[variables('databaseAccountName')]"
-            }
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]"
+            },
+            "resources": [
+                {
+                    "name": "appsettings",
+                    "type": "config",
+                    "apiVersion": "2016-08-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites/', parameters('siteName'))]",
+                        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('databaseAccountName'))]"
+                    ],
+                    "tags": {
+                        "displayName": "WebAppSettings"
+                    },
+                    "properties": {
+                        "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
+                        "COSMOS_URL": "[concat('mongodb://', variables('databaseAccountName'), '.documents.azure.com:10255/?ssl=true')]",
+                        "COSMOS_DB_NAME": "[variables('databaseAccountName')]",
+                        "COSMOS_USERNAME": "[variables('databaseAccountName')]",
+                        "COSMOS_PASSWORD": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('databaseAccountName')), '2016-03-31').primaryMasterKey]"
+                    }
+                }
+            ],
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]",
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('databaseAccountName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ]
         }
     ]
 }
