@@ -3,7 +3,7 @@
 This is an example of using a custom Azure Resource Manager (ARM) template,
  `azuredeploy.json`, to deploy resources.
 
-[![Deploy to Azure](https://azuredeploy.net/deploybutton.svg)](https://github.com/Smarker/azdeploy-sample)
+[![Deploy to Azure](https://azuredeploy.net/deploybutton.svg)](https://deploy.azure.com/?repository=https://github.com/Smarker/azdeploy-sample)
 
 By clicking on this deploy button, several resources will be created:
 
